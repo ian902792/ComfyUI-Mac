@@ -1,7 +1,9 @@
 # 本機實測紀錄 — MacBook Pro M5 Pro (20 核 GPU) / 64 GB (68.7 GB 可見) / macOS 27.0
 
 ComfyUI 0.36.0 · torch 2.14.0 (MPS) · Python 3.12.13 · 解析度 1344×768 · 每個模型跑兩張，第二張為穩定速度。
-工具：`.venv/bin/python bench.py [zimage|flux|qwen|edit]`，結果 `bench_results.txt`，圖 `output/bench/`。
+工具：`~/ComfyUI/.venv/bin/python scripts/bench.py [zimage|flux|qwen|edit]`，結果 `bench_results.txt`，圖 `~/ComfyUI/output/bench/`。
+
+**目前最佳設定（2026-09-18）**：`--use-pytorch-cross-attention`（已是 App 預設）→ Z-Image **22 s**、Flux Krea **85 s**、Qwen-Image **~44 s**、Qwen-Edit **53 s**（1344×768）。
 
 ## 2026-09-18 完整一輪（冷啟動，四個模型連跑）
 
@@ -30,13 +32,28 @@ Qwen 8 步在 33–56 s 之間波動，取決於前一個模型是否還占著�
 峰值記憶體不變（Qwen 系列仍 ~60 GB）。輸出是同一組 seed，畫面肉眼無差（SDPA 是數學等價的注意力實作，只是 kernel 不同）。
 **已設為預設**（`~/ComfyUI/user/app_args.txt`）。
 
-同時觀察到 `sysctl vm.swapusage` 顯示 28.8 GB swap 在用——跑 Qwen 系列時系統會把其他 app 換出去；不是錯誤，但代表 64 GB 對 20B 模型 + 日常 app 是剛剛好。
+同時觀察到 `sysctl vm.swapusage` 顯示 **28.8 GB swap 在用**（`vm_stat` Swapouts 3.6 千萬頁）——跑 Qwen 系列時系統會把其他 app 換出去；不是錯誤，但代表 64 GB 對 20B 模型 + 日常 app 是剛剛好。跑 Qwen 前關掉大 app 這條建議是實測有差的。
+
+### 其他旗標評估（不降品質為前提）
+
+| 旗標 | 結論 | 原因 |
+|---|---|---|
+| `--use-pytorch-cross-attention` | ✔ 採用 | 上表；數學等價，−13～24% |
+| `--fast` | ✘ | 官方標「untested / potentially quality-degrading」，且是 CUDA fp8/fp16 累加優化，MPS 沒得吃 |
+| `--fp16-vae` | ✘ | M5 原生 bf16，fp16 VAE 只增加黑圖風險，速度無差 |
+| `--fp8*-unet` / `--fp8*-text-enc` | ✘ | MPS 沒有 fp8 dtype（見下方相容表） |
+| `--highvram` / `--gpu-only` | ✘ | 統一記憶體下「offload 到 CPU」只是換位置，收益小；換模型時會直接 OOM |
+| `--preview-method auto` | 視需要 | 每步多一次小解碼，慢 5–10%；想看中途預覽再開 |
+| `--cache-lru N` | ✘ | 預設 RAM pressure cache 已依可用記憶體自動保留；固定 N 在 64 GB 容易擠爆 |
+| Turbo 4 步 / Lightning 4 步 | 草稿用 | 更快但這是品質換速度 |
+| `--async-offload` | 未測 | 多 stream 搬權重，MPS 上未驗證 |
+| SageAttention（Manager 內） | ✘ | Metal 沒有 kernel |
 
 ## 解讀
 
-- **Z-Image 是日常草稿機**：30 秒一張、記憶體 50 GB 以下，可邊開瀏覽器邊跑。
+- **Z-Image 是日常草稿機**：22 秒一張、記憶體 50 GB 以下，可邊開瀏覽器邊跑。
 - **Qwen-Image / Edit 會把 64 GB 機器推到 ~61 GB**：跑之前關掉吃記憶體的 app（瀏覽器多分頁、Docker、IDE），否則會 swap 變慢 3–10 倍。
-- **Flux Krea 是四個裡最慢的（~100 s）** 但記憶體最省；20 步已夠，28 步約 2.3 分。
+- **Flux Krea 是四個裡最慢的（~85 s）** 但記憶體最省；20 步已夠，28 步約 2 分。
 - 首張時間 = 從硬碟載入模型（Qwen 30 GB 要 3–4 分鐘）。同一模型連續出圖只付穩定時間；換模型就要再付一次載入。
   → 工作習慣：**同一個模型的工作集中做完再換模型**。
 - 對照 RunPod RTX 5090：Z-Image 2–3 s、Flux ~10 s、Qwen ~20 s（快 10–30×）；本機贏在 $0 與零上傳。
