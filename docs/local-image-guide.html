@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mac 本機 ComfyUI 生圖入門</title>
+<meta name="description" content="在 MacBook Pro M5 Pro 64GB 上用 ComfyUI 產 AI 圖片：模型選擇（精緻/平衡）、每張圖預估時間、哪些素材值得在本機做、如何接回 MiniMax H3 影片流程。">
+<style>
+:root{--bg:#fafaf9;--fg:#1c1917;--muted:#57534e;--card:#fff;--line:#e7e5e4;--accent:#0f766e;--accent-bg:#ccfbf1;--warn-bg:#fef3c7;--warn:#92400e;--code-bg:#f5f5f4}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0a09;--fg:#e7e5e4;--muted:#a8a29e;--card:#1c1917;--line:#292524;--accent:#2dd4bf;--accent-bg:#134e4a;--warn-bg:#422006;--warn:#fcd34d;--code-bg:#1c1917}}
+:root[data-theme="dark"]{--bg:#0c0a09;--fg:#e7e5e4;--muted:#a8a29e;--card:#1c1917;--line:#292524;--accent:#2dd4bf;--accent-bg:#134e4a;--warn-bg:#422006;--warn:#fcd34d;--code-bg:#1c1917}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.7 -apple-system,"PingFang TC","Noto Sans TC",system-ui,sans-serif}
+main{max-width:880px;margin:0 auto;padding:32px 16px 80px}
+h1{font-size:1.9rem;line-height:1.25;margin:0 0 8px}
+h2{font-size:1.4rem;margin:56px 0 12px;padding-top:16px;border-top:1px solid var(--line)}
+h3{font-size:1.1rem;margin:28px 0 8px}
+p{margin:8px 0}a{color:var(--accent)}
+.lead{color:var(--muted);font-size:1.05rem}
+nav{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 20px;margin:20px 0}
+nav ol{margin:0;padding-left:20px;columns:2;column-gap:24px}
+@media (max-width:600px){nav ol{columns:1}}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:.93rem;display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--code-bg)}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em}
+code{background:var(--code-bg);padding:1px 5px;border-radius:4px}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;line-height:1.5}
+pre code{background:none;padding:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:14px 0}
+.tip{background:var(--accent-bg);border-left:4px solid var(--accent);padding:10px 14px;border-radius:6px;margin:12px 0}
+.warn{background:var(--warn-bg);border-left:4px solid var(--warn);padding:10px 14px;border-radius:6px;margin:12px 0}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:8px 0}
+.kv b{color:var(--muted);font-weight:500}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+ul,ol{padding-left:22px}small{color:var(--muted)}
+.ok{color:var(--accent);font-weight:600}.no{color:var(--warn);font-weight:600}
+</style>
+</head>
+<body>
+<main>
+<h1>Mac 本機 ComfyUI 生圖入門（給影片流程用的素材）</h1>
+<p class="lead">你的機器：<b>MacBook Pro M5 Pro、18 核 CPU / 20 核 GPU、64 GB 統一記憶體、剩 505 GB 空間</b>，尚未裝 ComfyUI。這份教學說明本機能做什麼、用哪些模型、一張圖要等多久，以及哪些圖做出來能直接接回 <a href="../../RunpodGenVideo/docs/guide.html">MiniMax H3 影片流程</a>。資料日期 2026-09-17。</p>
+
+<nav><ol>
+<li><a href="#a1">本機能做什麼、不能做什麼</a></li>
+<li><a href="#a2">安裝（15 分鐘）</a></li>
+<li><a href="#a3">模型選擇：精緻方案 vs 平衡方案</a></li>
+<li><a href="#a4">每張圖要多久（M5 Pro 預估）</a></li>
+<li><a href="#a5">第一張圖：實際操作</a></li>
+<li><a href="#a6">哪些素材值得在本機做（接回影片）</a></li>
+<li><a href="#a7">資料夾與命名規範</a></li>
+<li><a href="#a8">常見問題</a></li>
+</ol></nav>
+
+<h2 id="a1">1. 本機能做什麼、不能做什麼</h2>
+<div class="grid">
+<div class="card"><h3 style="margin-top:0"><span class="ok">✔ 適合本機</span></h3><ul>
+<li>生圖：角色設計、參考圖集、場景關鍵幀、首尾幀——<b>不限次數、$0</b></li>
+<li>圖片編輯：換角度/表情/服裝、保持同一人（Qwen-Image-Edit）</li>
+<li>合成參考圖（文章那種左景右人拼圖）、去背、放大</li>
+<li>寫 prompt、整理分鏡表、試 seed</li>
+</ul><p>64 GB 統一記憶體＝任何 20B 級生圖模型都塞得下，<b>不會 OOM</b>，只是比 5090 慢 10–30 倍。</p></div>
+<div class="card"><h3 style="margin-top:0"><span class="no">✘ 不要在本機做</span></h3><ul>
+<li><b>MiniMax H3 影片生成</b>：MPS 上 33B 影片模型一段 15 秒要 1–3 小時，而且很多 CUDA kernel 沒有 Mac 版。這是 RunPod 5090 的工作。</li>
+<li><b>LoRA 訓練</b>：Mac 上要 3–8 小時；RunPod 5090 上 30–60 分鐘、$1。</li>
+<li>批量放大到 4K 影片：慢且沒有 NVENC。</li>
+</ul></div>
+</div>
+<div class="tip">分工原則：<b>「想」在 Mac，「算」在雲端</b>。本機把所有靜態素材做到滿意，雲端只負責把圖變影片——這樣 RunPod 的每一小時都在產出成品，不是在試錯。</div>
+
+<h2 id="a2">2. 安裝（15 分鐘）</h2>
+<div class="tip">✔ 2026-09-18 已用方案 B 裝好在 <code>~/ComfyUI</code>（自包含，<code>rm -rf ~/ComfyUI</code> 即移除）。啟動：<code>/Applications/ComfyUI.app</code>（獨立視窗，關掉就停伺服器；瀏覽器也能開 127.0.0.1:8188）。說明、App 選單、四週學習計畫：<code>ComfyUI-Mac/README.md</code>；測速：<code>ComfyUI-Mac/scripts/bench.py</code>。</div>
+<h3>方案 A：ComfyUI Desktop（推薦新手）</h3>
+<ol>
+<li>到 <a href="https://www.comfy.org/download">comfy.org/download</a> 下載 macOS（Apple Silicon）版 dmg，拖進 Applications。</li>
+<li>第一次開啟會問安裝位置，選一個大硬碟目錄，例如 <code>~/ComfyUI</code>（模型會放在 <code>~/ComfyUI/models/</code>）。它會自己裝 Python 與 PyTorch（MPS 版），不用碰終端機。</li>
+<li>開啟後左側 <b>Template Library</b> 有官方 workflow，點一個會提示缺哪些模型並可一鍵下載。</li>
+</ol>
+<h3>方案 B：終端機安裝（想自己控制版本）</h3>
+<pre><code>brew install uv
+git clone https://github.com/comfyanonymous/ComfyUI ~/ComfyUI && cd ~/ComfyUI
+uv venv --python 3.12 .venv && source .venv/bin/activate   # 你系統的 Python 3.14 太新，用 3.12
+uv pip install torch torchvision torchaudio                # macOS 自帶 MPS 支援
+uv pip install -r requirements.txt
+python main.py --listen 127.0.0.1                          # 開 http://127.0.0.1:8188</code></pre>
+<p>之後裝 <b>ComfyUI-Manager</b>（Desktop 版內建）方便找缺的節點：<code>git clone https://github.com/Comfy-Org/ComfyUI-Manager custom_nodes/ComfyUI-Manager</code>。</p>
+<h3>方案 C：Draw Things（App Store，最無腦）</h3>
+<p>原生 Metal 實作，同一台 Mac 比 ComfyUI 快 20–40%，模型內建下載。缺點是 workflow 不能帶去 RunPod 重用、進階節點少。<b>適合先玩兩天感受一下再進 ComfyUI</b>。</p>
+
+<h2 id="a3">3. 模型選擇</h2>
+<p>2026-09 這個時間點，開源生圖有三個主流家族，都在 ComfyUI 原生支援：</p>
+<table><thead><tr><th>模型</th><th>參數</th><th>強項</th><th>弱項</th><th>檔案（Mac 建議版本）</th><th>授權</th></tr></thead><tbody>
+<tr><td><b>Qwen-Image</b>（含 Edit-2511）</td><td>20B</td><td>提示詞理解最強、中英文字渲染、<b>多圖編輯保持同一人</b></td><td>大、慢；人像有時偏「乾淨」</td><td>fp8 20 GB（一般 fp8 可跑）；Edit 用 <b>int8_convrot</b> 20.5 GB</td><td>Apache-2.0</td></tr>
+<tr><td><b>FLUX.1 Krea [dev]</b> / FLUX.1-dev</td><td>12B</td><td><b>真人質感最自然、最不像 AI</b>（Krea 版特別去 AI 味）、LoRA 生態最大</td><td>文字弱、提示詞偏好英文</td><td><b>GGUF Q8_0</b> 12.7 GB（需 ComfyUI-GGUF 節點）</td><td>非商用（dev 授權）</td></tr>
+<tr><td><b>Z-Image-Turbo</b></td><td>6B</td><td><b>8 步就出圖、最快</b>，質感接近 Flux</td><td>複雜構圖較弱、可控性普通</td><td>bf16 12 GB / fp8 6 GB</td><td>Apache-2.0</td></tr>
+<tr><td>SDXL（+ Juggernaut 等）</td><td>3.5B</td><td>超快、老牌、LoRA 海量</td><td>手/文字/提示詞理解過時</td><td>7 GB</td><td>開放</td></tr>
+</tbody></table>
+
+<div class="grid">
+<div class="card"><h3 style="margin-top:0">🎯 精緻方案（你的首選）</h3>
+<div class="kv">
+<b>角色主圖</b><span><b>FLUX.1 Krea dev</b>，1024×1024 或 1344×768，28 步，CFG 3.5</span>
+<b>參考圖集</b><span><b>Qwen-Image-Edit-2511</b>（多圖輸入：主圖 + 指令「同一人、轉 3/4 側面、換白襯衫」）</span>
+<b>場景關鍵幀</b><span><b>Qwen-Image</b> 1344×768，20 步（構圖與指令遵從最準）</span>
+<b>放大</b><span>4x-UltraSharp（ESRGAN）到 2K 再縮回，細節更扎實</span>
+<b>每張成本</b><span>時間：2–5 分鐘/張，見 §4</span>
+</div><p>一晚 3 小時約能產 40–60 張定稿級素材，夠一個角色 + 10 個場景。</p></div>
+<div class="card"><h3 style="margin-top:0">⚖️ 平衡方案（先摸索用）</h3>
+<div class="kv">
+<b>草稿 / 找構圖</b><span><b>Z-Image-Turbo</b> 8 步，1024²，30–60 秒一張，一晚可抽 200 張</span>
+<b>定稿</b><span>挑中的構圖用 Flux Krea 以 img2img（denoise 0.5）重繪一次</span>
+<b>一致性</b><span>Qwen-Image-Edit-2511（同上）</span>
+<b>每張成本</b><span>草稿 &lt;1 分鐘、定稿 3 分鐘</span>
+</div><p>新手前兩週建議這條：多抽、多看、快速學 prompt，再切精緻方案。</p></div>
+</div>
+<div class="warn">授權提醒：FLUX.1-dev / Krea dev 是<b>非商用</b>授權；要商用的素材改用 Qwen-Image 或 Z-Image（Apache-2.0）。H3 影片本身也有授權限制（見主教學 §2）。</div>
+
+<h2 id="a4">4. 每張圖要多久（M5 Pro 20 核 GPU、64 GB 預估）</h2>
+<p>✔ 標記為你這台機器的實測；其餘由 M3 Max / M4 Pro 換算（Z-Image 實測比推估快約 1.5×，其他列可能也偏保守）。原推估說明：Apple Silicon 沒有公開的 M5 Pro ComfyUI 數據，以下由 M3 Max / M4 Pro / M1 Max 實測換算（M5 GPU 有 Neural Accelerator 與原生 FP8/BF16，估計比 M4 Pro 快 1.3–1.8×）。<b>請把它當「數量級」，安裝後用 §5 的第一張圖實測校正</b>。</p>
+<table><thead><tr><th>模型</th><th>解析度 / 步數</th><th>預估時間</th><th>記憶體峰值</th><th>參考數據</th></tr></thead><tbody>
+<tr><td>SDXL</td><td>1024² / 25 步</td><td><b>15–25 秒</b></td><td>~8 GB</td><td>M5 Max 20–35 秒</td></tr>
+<tr><td>Z-Image-Turbo</td><td>1344×768 / 8 步</td><td><b>24 秒（實測 ✔）</b><br><small>首張 51 秒含編譯</small></td><td>~14 GB</td><td><b>你的 M5 Pro 2026-09-18 實測</b>；M3 Max 60–80 秒</td></tr>
+<tr><td>FLUX.1 Krea dev（GGUF Q8）</td><td>1344×768 / 20 步</td><td><b>98 秒（實測 ✔）</b><br><small>首張 113 秒</small></td><td>~20 GB</td><td><b>M5 Pro 實測</b>；28 步約 2.3 分</td></tr>
+<tr><td>Qwen-Image（fp8）20 步</td><td>1344×768 / 20 步</td><td>~2.3 分鐘</td><td>~30 GB</td><td>由 8 步實測換算</td></tr>
+<tr><td>Qwen-Image + Lightning 8 步 LoRA</td><td>1344×768 / 8 步</td><td><b>56 秒（實測 ✔）</b><br><small>首張 279 秒含載入 30 GB</small></td><td>~30 GB</td><td><b>M5 Pro 實測</b></td></tr>
+<tr><td>Qwen-Image-Edit-2511（int8 + 4 步 Lightning）</td><td>1344×768 輸入 / 4 步</td><td><b>64 秒（實測 ✔）</b><br><small>首張 110 秒</small></td><td>~30 GB</td><td><b>M5 Pro 實測</b>；M1 Max 2:33</td></tr>
+<tr><td colspan="5"><small>完整紀錄（含記憶體峰值、MPS 相容表）：<code>ComfyUI-Mac/BENCHMARK.md</code>。記憶體：Z-Image 51 GB、Flux 46 GB、<b>Qwen / Edit 61 GB（整機，含 17.5 GB 基準）</b>——跑 Qwen 前關其他 app。</small></td></tr>
+<tr><td>放大 4x-UltraSharp</td><td>1024→4096</td><td>20–40 秒</td><td>小</td><td></td></tr>
+</tbody></table>
+<p>對照：同樣的圖在 RunPod 5090 上 Z-Image 2–3 秒、Flux 10 秒、Qwen-Image 20 秒。所以<b>「要抽 500 張找靈感」也可以開 5090 一小時 $1 做完</b>；本機的價值是零成本、隨時可用、不用上傳下載。</p>
+<div class="warn"><b>MPS 地雷（實測踩到）</b>：檔名帶 <code>fp8_scaled</code> / <code>fp8mixed</code> 的模型在 Mac 會報 <code>Undefined type Float8_e4m3fn</code>——Metal 沒有 fp8 dtype，ComfyUI 的 scaled-fp8 反量化路徑無法執行。一般 <code>fp8_e4m3fn</code>（如 Qwen-Image）可以，會自動升成 bf16。替代：<b>GGUF Q8</b>（裝 ComfyUI-GGUF）、<b>int8_convrot</b>、或 bf16。文字編碼器的 <code>t5xxl_fp8_e4m3fn_scaled</code> / <code>qwen_2.5_vl_7b_fp8_scaled</code> 沒問題。</div>
+<div class="tip">加速三招（M 系列）：① 第一次跑會慢 2–3 倍（編譯 Metal kernel），看第二張才準。② 若模型是 fp8 檔而 Mac 跑不動，換 GGUF Q8 或 bf16 版。③ 舊版 ComfyUI 在 M1–M3 要加 <code>--fp16-unet --fp16-vae</code>；M5 原生支援 BF16 通常不需要，若某模型異常慢再試。</div>
+
+<h2 id="a5">5. 第一張圖：實際操作（Z-Image-Turbo，10 分鐘）</h2>
+<ol>
+<li>ComfyUI → Template Library → Image → <b>Z-Image Turbo</b>（沒有的話更新 ComfyUI）。</li>
+<li>點 template 會列出缺的三個檔並可下載：<code>z_image_turbo_bf16.safetensors</code>（diffusion_models）、<code>qwen_3_4b.safetensors</code>（text_encoders）、<code>ae.safetensors</code>（vae）。</li>
+<li>Prompt 貼你的角色聖經（主教學 §8.3 Step 1）；解析度 <b>1344×768</b>（跟 H3 影片畫布一致，省得之後裁）；steps 8、cfg 1.0；seed 設 fixed。</li>
+<li>Queue。第一張慢屬正常；<b>記下第二張的秒數</b>，回頭把 §4 的表校正成你的真實數字。</li>
+<li>喜歡的圖：seed 記進檔名（§7），這就是你角色的「出生證明」。</li>
+</ol>
+<p>接著換 Flux Krea template 用同一段 prompt 再生一張，比較質感差異——兩個模型的「臉」會不一樣，選一個當你角色的家，之後不要換。</p>
+
+<h2 id="a6">6. 哪些素材值得在本機做（如何接回影片）</h2>
+<p>H3 影片流程需要的<b>所有靜態輸入</b>都能在本機先做好。按投資報酬率排序：</p>
+<table><thead><tr><th>素材</th><th>值得？</th><th>怎麼用進影片</th><th>本機做法</th></tr></thead><tbody>
+<tr><td><b>角色主參考圖</b>（正面半身、乾淨背景）</td><td class="ok">必做</td><td>R2V 參考圖 #1；所有 Edit 的來源</td><td>Flux Krea，抽到滿意記 seed</td></tr>
+<tr><td><b>角色參考圖集</b>（3/4 側、側面、全身、5 表情、3 光線、每套服裝）</td><td class="ok">必做</td><td>R2V 參考圖 #2 依場景挑；也是之後訓 LoRA 的資料集</td><td>Qwen-Image-Edit-2511 多圖輸入，指令「same person, turn 45°…」</td></tr>
+<tr><td><b>場景關鍵幀</b>（每個場景一張首幀，含角色）</td><td class="ok">必做</td><td>I2V 的 <code>first_frame</code>；每 5–8 段接龍後重新錨定</td><td>Qwen-Image 生空場景 → Edit 把角色放進去（或直接生）</td></tr>
+<tr><td><b>首尾幀對</b>（動作起點 / 終點）</td><td class="ok">值得</td><td>FL2V：給 first + last，H3 補中間，動作可控度大增</td><td>Edit：以首幀為基礎改姿勢/位置</td></tr>
+<tr><td><b>合成參考圖</b>（左景右人，文章那招）</td><td class="ok">值得</td><td>I2V 單張同時鎖場景與人</td><td>ComfyUI Image Concatenate 節點或 Preview → 任何修圖軟體拼</td></tr>
+<tr><td><b>服裝/道具設定圖</b></td><td>有幫助</td><td>寫進 prompt 的依據；R2V 可當第二張參考</td><td>Edit：「same outfit on mannequin, front and back」</td></tr>
+<tr><td><b>場景空景</b>（無人）</td><td>有幫助</td><td>換角色/多角色時當底圖；桌面桌布</td><td>Qwen-Image 1344×768</td></tr>
+<tr><td>字幕/UI 版型圖</td><td>有幫助</td><td>文章要 H3 生字幕 UI 很吃運氣；改成後製疊字更穩</td><td>本機做透明 PNG 版型，ffmpeg/剪輯軟體疊</td></tr>
+<tr><td>放大後的 4K 靜態圖</td><td>小幫助</td><td>H3 輸入是 768p，放大沒必要；只有做海報/縮圖用</td><td>4x-UltraSharp</td></tr>
+<tr><td>大量風格探索圖</td><td class="no">不值得在本機</td><td>—</td><td>要抽幾百張時開 5090 一小時比較划算</td></tr>
+</tbody></table>
+<div class="tip">送上雲端前的檢查：解析度 <b>1344×768（16:9）</b>或 768×1344（9:16）、PNG、同一角色的所有圖放同一資料夾、檔名含 seed。上傳只要一次（拖進 RunPod 的 FileBrowser 8080 或 ComfyUI LoadImage），之後每次 Pod 開機都在 network volume 上。</div>
+
+<h2 id="a7">7. 資料夾與命名規範</h2>
+<pre><code>~/AIVideo/
+├── characters/
+│   └── mei/                         # 一個角色一個資料夾
+│       ├── bible.md                 # 角色聖經（貼進所有 prompt）
+│       ├── master_seed123456.png    # 主參考圖
+│       ├── ref_front.png  ref_34.png  ref_side.png  ref_full.png
+│       ├── expr_smile.png expr_neutral.png …
+│       └── outfit_A_stripe.png outfit_B_jk.png
+├── scenes/
+│   └── s01_sofa_desktop/
+│       ├── empty.png                # 空景
+│       ├── kf01_first.png           # 關鍵幀（首幀）
+│       ├── kf01_last.png            # 尾幀（可選）
+│       └── composite.png            # 左景右人合成圖
+├── shots.csv                        # 分鏡表：shot, scene, first, last, refs, prompt, duration
+└── workflows/                       # 本機用的 ComfyUI json（Z-Image / Flux / Qwen-Edit）</code></pre>
+<p>檔名帶 seed 與版本，永遠不要覆蓋舊檔（改名 v2）。<code>shots.csv</code> 就是之後在 RunPod 批次排隊的輸入，我可以幫你寫「讀 CSV → 逐段送 ComfyUI API」的腳本。</p>
+
+<h2 id="a8">8. 常見問題</h2>
+<div class="kv">
+<b>出圖比表上慢 3 倍</b><span>第一張在編譯；或模型是 fp8 且 ComfyUI 版本沒對 MPS 做 fp8 → 換 bf16/GGUF；或活動監視器看記憶體壓力是否變黃（同時開太多 app）。</span>
+<b>黑圖 / 全灰</b><span>VAE 精度問題，加 <code>--fp16-vae</code> 或換 <code>ae.safetensors</code> 官方版。</span>
+<b>"MPS backend out of memory"</b><span>降解析度或加 <code>PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0</code> 環境變數；64 GB 通常不會遇到。</span>
+<b>Template Library 沒有某模型</b><span>更新 ComfyUI（Desktop：設定 → 更新；終端機：<code>git pull && uv pip install -r requirements.txt</code>）。</span>
+<b>模型下載很慢</b><span>HuggingFace 直連通常 20–50 MB/s；40 GB 的 Qwen-Image 約 20 分鐘，先下 Z-Image（12 GB）玩。</span>
+<b>想更快</b><span>Draw Things（Metal 原生）或 <a href="https://github.com/filipstrand/mflux">mflux</a>（MLX）跑 Flux/Qwen 快 20–40%，但 workflow 不通用；素材做完再回 ComfyUI 也行。</span>
+</div>
+
+<p style="margin-top:40px"><small>參考：<a href="https://www.heyuan110.com/posts/ai/2026-02-15-mac-mini-local-image-generation/">Mac Mini M4 ComfyUI vs Draw Things 實測</a>・<a href="https://lilting.ch/en/articles/comfyui-qwen-mps-bf16-slowdown">Qwen Image Edit on MPS BF16 slowdown</a>・<a href="https://www.thundercompute.com/blog/z-image-turbo-comfyui">Z-Image Turbo ComfyUI 2026-09</a>・<a href="https://runaihome.com/blog/apple-m5-max-macbook-local-ai-2026/">M5 Max local AI 2026</a>・<a href="https://docs.comfy.org/">ComfyUI docs</a>。時間為推估，安裝後請以實測為準。</small></p>
+</main>
+</body>
+</html>

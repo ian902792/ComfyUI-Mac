@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><title>ComfyUI Server Log</title>
+<style>
+:root{--bg:#0f0f10;--fg:#e7e5e4;--muted:#a8a29e}
+@media (prefers-color-scheme:light){:root{--bg:#fafaf9;--fg:#1c1917;--muted:#57534e}}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg)}
+body{display:flex;flex-direction:column}
+header{padding:6px 10px;font:12px -apple-system,system-ui,sans-serif;color:var(--muted);display:flex;gap:12px;align-items:center;border-bottom:1px solid rgba(127,127,127,.25)}
+header label{display:flex;gap:4px;align-items:center}
+pre{flex:1;margin:0;padding:10px;overflow:auto;font:12px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-all}
+</style></head>
+<body>
+<header><span id="st"></span><label><input type="checkbox" id="follow" checked>自動捲到底</label><button id="clear">清空畫面</button></header>
+<pre id="log"></pre>
+<script>
+const inv=(c,a)=>window.__TAURI__.core.invoke(c,a), pre=document.getElementById('log'), follow=document.getElementById('follow');
+const add=l=>{pre.textContent+=l+'\n';if(pre.textContent.length>400000)pre.textContent=pre.textContent.slice(-300000);if(follow.checked)pre.scrollTop=pre.scrollHeight};
+inv('get_log').then(ls=>ls.forEach(add));
+window.__TAURI__.event.listen('server-log',e=>add(e.payload));
+document.getElementById('clear').onclick=()=>pre.textContent='';
+const refresh=()=>inv('get_status').then(s=>{document.getElementById('st').textContent=`${s.dir} · ${s.external?'外部伺服器':(s.running?'App 啟動的伺服器 (running)':'stopped')} · 日誌檔 user/app.log`});
+refresh();setInterval(refresh,3000);
+</script></body></html>

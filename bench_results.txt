@@ -1,0 +1,8 @@
+zimage  run 1:   42.7s  peak mem  50.7 GB  -> output/bench/zimage_00005_.png
+zimage  run 2:   29.1s  peak mem  50.2 GB  -> output/bench/zimage_00006_.png
+flux    run 1:  104.9s  peak mem  46.1 GB  -> output/bench/flux_krea_00005_.png
+flux    run 2:   96.9s  peak mem  46.0 GB  -> output/bench/flux_krea_00006_.png
+qwen    run 1:  246.1s  peak mem  61.3 GB  -> output/bench/qwen_image_00005_.png
+qwen    run 2:   32.8s  peak mem  59.5 GB  -> output/bench/qwen_image_00006_.png
+edit    run 1:  108.6s  peak mem  60.8 GB  -> output/bench/qwen_edit_00005_.png
+edit    run 2:   67.5s  peak mem  61.2 GB  -> output/bench/qwen_edit_00006_.png
