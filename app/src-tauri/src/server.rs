@@ -169,7 +169,7 @@ pub fn open_args_file(dir: &PathBuf) {
     if !p.exists() {
         let _ = std::fs::create_dir_all(dir.join("user"));
         let _ = OpenOptions::new().create(true).write(true).open(&p).and_then(|mut f| {
-            f.write_all("# ComfyUI.app 額外啟動參數，一行一個。改完用選單 Server ▸ Restart Server。\n# --fp16-vae\n# --preview-method auto\n".as_bytes())
+            f.write_all("# ComfyUI.app 額外啟動參數，一行一個。改完用選單 Server ▸ Restart Server。\n--use-pytorch-cross-attention\n# --fp16-vae\n# --preview-method auto\n".as_bytes())
         });
     }
     let _ = Command::new("open").arg("-t").arg(&p).spawn();

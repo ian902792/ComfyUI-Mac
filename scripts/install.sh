@@ -15,7 +15,7 @@ for repo in Comfy-Org/ComfyUI-Manager city96/ComfyUI-GGUF; do
   n=${repo#*/}; [ -d "custom_nodes/$n" ] || git clone --depth 1 "https://github.com/$repo" "custom_nodes/$n"
   [ -f "custom_nodes/$n/requirements.txt" ] && uv pip install --python .venv/bin/python -r "custom_nodes/$n/requirements.txt"
 done
-mkdir -p user; [ -f user/app_args.txt ] || printf '# ComfyUI.app 額外啟動參數，一行一個。改完用選單 Server ▸ Restart Server。\n# --fp16-vae\n# --preview-method auto\n' > user/app_args.txt
+mkdir -p user; [ -f user/app_args.txt ] || printf '# ComfyUI.app 額外啟動參數，一行一個。改完用選單 Server ▸ Restart Server。\n--use-pytorch-cross-attention\n# --fp16-vae\n# --preview-method auto\n' > user/app_args.txt
 rm -rf .uv-cache
 .venv/bin/python -c "import torch;print('torch',torch.__version__,'mps',torch.backends.mps.is_available())"
 [ "${1:-}" = "--models" ] && bash "$(dirname "$0")/download_models.sh"

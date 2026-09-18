@@ -90,6 +90,30 @@ cd .. && pnpm dlx @tauri-apps/cli@2 bundle && rm -rf /Applications/ComfyUI.app &
 
 更新：App 選單 Update ▸ Update ComfyUI，或 `cd ~/ComfyUI && git pull && uv pip install --python .venv/bin/python -r requirements.txt`
 
+## 3.5 設定優化（不降品質）
+
+已做（2026-09-18 實測，見 `BENCHMARK.md`）：
+
+| 設定 | 效果 | 狀態 |
+|---|---|---|
+| `--use-pytorch-cross-attention` | 用 PyTorch 融合 SDPA kernel 取代 ComfyUI 在 MPS 的 sub-quadratic 後備實作。Z-Image −24%、Flux −13%、Qwen-Edit −22%；數學等價，輸出相同 | **預設開啟**（`user/app_args.txt`） |
+| fp8_scaled → GGUF Q8 / int8_convrot | 不是加速，是 MPS 唯一能跑的量化格式；Q8/int8 與 fp8 品質相當 | 已換 |
+| 模型工作集中做 | 首張要載 12–30 GB（Qwen 4 分鐘），同模型連續出圖只付穩定時間 | 習慣 |
+| 跑 Qwen 前關其他 app | Qwen/Edit 峰值 ~60 GB，系統會 swap（實測 swap 用到 28 GB） | 習慣；`sysctl vm.swapusage` 可查 |
+
+看過但**不建議**（會動到品質或不划算）：
+
+| 設定 | 為什麼不 |
+|---|---|
+| `--fast` | 官方標「untested / potentially quality-degrading」，且主要是 CUDA fp8/fp16 累加優化，MPS 沒得吃 |
+| `--fp16-vae` / `--fp8*-unet` / `--fp8*-text-enc` | M5 原生 bf16，fp16 VAE 只會多黑圖風險；fp8 在 MPS 不能算 |
+| `--highvram` / `--gpu-only` | 統一記憶體下「offload 到 CPU」只是換個位置，收益小；卻會讓換模型時直接 OOM |
+| `--preview-method auto` | 每步多一次小解碼，慢 5–10%；想看預覽再開 |
+| `--cache-lru N` | 現在的 RAM pressure cache 已經會依可用記憶體自動保留模型；固定 N 在 64 GB 上反而容易擠爆 |
+| 更少步數（Turbo 4 步、Lightning 4 步） | 快，但這就是品質換速度，草稿階段再用 |
+
+還沒試、可能有用：`--async-offload`（多 stream 搬權重，MPS 上未測）；ComfyUI-Manager 內的 `sageattention` 在 Metal 沒有 kernel，不用試。
+
 ## 4. 學習計畫（每晚 1 小時，四週）
 
 目標：四週後能穩定產出「同一個角色、不同場景」的 1344×768 素材，直接進雲端影片流程。
@@ -131,18 +155,37 @@ cd .. && pnpm dlx @tauri-apps/cli@2 bundle && rm -rf /Applications/ComfyUI.app &
 
 ## 5. 實測速度與記憶體（本機）
 
-完整紀錄與解讀見 **`BENCHMARK.md`**。摘要（1344×768，穩定速度，峰值為整機記憶體含 17.5 GB 基準）：
+完整紀錄與解讀見 **`BENCHMARK.md`**。摘要（1344×768，穩定速度，已含 `--use-pytorch-cross-attention`；峰值為整機記憶體含 17.5 GB 基準）：
 
 | 模型 | 步數 | 穩定 | 峰值記憶體 |
 |---|---|---|---|
-| Z-Image-Turbo | 8 | **29 s** | 51 GB |
-| FLUX.1 Krea GGUF Q8 | 20 | **97 s** | 46 GB |
+| Z-Image-Turbo | 8 | **22 s** | 51 GB |
+| FLUX.1 Krea GGUF Q8 | 20 | **85 s** | 46 GB |
 | Qwen-Image + Lightning | 8 | **33–56 s** | 61 GB ⚠ |
-| Qwen-Image-Edit-2511 + Lightning | 4 | **68 s** | 61 GB ⚠ |
+| Qwen-Image-Edit-2511 + Lightning | 4 | **53 s** | 61 GB ⚠ |
 
 ⚠ 跑 Qwen 系列前關掉其他吃記憶體的 app。重測：`~/ComfyUI/.venv/bin/python scripts/bench.py`。
 
-## 6. 常見問題
+## 6. 跟官方 ComfyUI Desktop 的差別
+
+| | 這套（~/ComfyUI + 自製 Tauri App） | 官方 ComfyUI Desktop（comfy.org） |
+|---|---|---|
+| 核心 | 官方 ComfyUI git clone，`git pull` 就是最新 nightly | 同一套 ComfyUI，跟隨 Desktop **穩定版**，落後 nightly 幾天到幾週 |
+| 殼 | Tauri（Rust + 系統 WKWebView），App 11 MB | Electron（內建 Chromium），App 約 200–300 MB，多吃 200–400 MB RAM |
+| Python / 依賴 | uv venv，全在 `~/ComfyUI/` | 也是 uv，但分在 `~/Library/Application Support/ComfyUI/` 與你選的 base path |
+| 模型位置 | `~/ComfyUI/models/` | base path；可用 `extra_model_paths.yaml` 指到現有目錄 |
+| 更新 | 選單 Update ▸ git pull，自己決定時機 | 自動更新提示、一鍵升級 |
+| 內建功能 | 啟動畫面、log 視窗、重啟、啟動參數、瀏覽器可開 | 以上皆有，另加設定 UI、內建終端機、崩潰回報、安裝精靈 |
+| 簽章 | ad-hoc（只在這台正常） | Apple 公證，換機器不會被 Gatekeeper 擋 |
+| 移除 | 刪兩個路徑，全乾淨 | App + Application Support + base path 三處 |
+| 出問題 | 自己修，但一切透明 | 有官方 issue tracker，Electron 那層動不了 |
+| 新模型支援 | 最快（nightly） | 要等 Desktop 發版 |
+
+**結論**：以「本機做生圖素材 → 雲端做影片、想學東西、要控制檔案位置」這個目標，現在這套較適合——環境已調通（MPS 地雷踩完）、nightly 先支援新模型、可整個移除、殼更省記憶體。
+Desktop 較適合：完全不想碰指令、要自動更新與設定介面、或要裝到別台 Mac。
+兩者可**並存**（Desktop 預設 port 8000，不衝突），把它的 model path 指到 `~/ComfyUI/models` 即可共用模型；不必二選一。
+
+## 7. 常見問題
 
 | 症狀 | 處理 |
 |---|---|

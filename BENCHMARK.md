@@ -18,6 +18,20 @@ ComfyUI 0.36.0 · torch 2.14.0 (MPS) · Python 3.12.13 · 解析度 1344×768 ·
 前一輪（同日稍早，非冷啟動）：Z-Image 24.3 s、Flux 97.5 s、Qwen 55.9 s、Edit 64.1 s。
 Qwen 8 步在 33–56 s 之間波動，取決於前一個模型是否還占著記憶體。
 
+## 2026-09-18 加 `--use-pytorch-cross-attention`（PyTorch SDPA 取代 sub-quadratic attention）
+
+| 模型 | 之前 | 之後 | 差 |
+|---|---|---|---|
+| Z-Image-Turbo 8 步 | 29.1 s | **22.2 s** | −24% |
+| FLUX.1 Krea Q8 20 步 | 96.9 s | **84.5 s** | −13% |
+| Qwen-Image 8 步 | 32.8–55.9 s | 44.1 s | 在原本波動範圍內 |
+| Qwen-Edit-2511 4 步 | 67.5 s | **52.8 s** | −22% |
+
+峰值記憶體不變（Qwen 系列仍 ~60 GB）。輸出是同一組 seed，畫面肉眼無差（SDPA 是數學等價的注意力實作，只是 kernel 不同）。
+**已設為預設**（`~/ComfyUI/user/app_args.txt`）。
+
+同時觀察到 `sysctl vm.swapusage` 顯示 28.8 GB swap 在用——跑 Qwen 系列時系統會把其他 app 換出去；不是錯誤，但代表 64 GB 對 20B 模型 + 日常 app 是剛剛好。
+
 ## 解讀
 
 - **Z-Image 是日常草稿機**：30 秒一張、記憶體 50 GB 以下，可邊開瀏覽器邊跑。
