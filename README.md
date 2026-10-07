@@ -8,7 +8,7 @@ ComfyUI-Mac/                  ← 這個 repo 資料夾：我們自己的東西�
 ├── README.md                 本檔
 ├── BENCHMARK.md              實測速度 / 記憶體 / MPS 相容表
 ├── UNINSTALL.md
-├── docs/local-image-guide.html   新手教學（模型選擇、時間、哪些素材接回影片）
+├── （本機生圖教學已搬到 amenderstudio.com/notes/local-image-guide）
 ├── scripts/
 │   ├── install.sh            從零重建 ~/ComfyUI（clone + venv + torch + custom_nodes）
 │   ├── download_models.sh    下載模型（可續傳、可單組）
@@ -145,7 +145,7 @@ cd .. && pnpm dlx @tauri-apps/cli@2 bundle && rm -rf /Applications/ComfyUI.app &
 - [ ] D1 做文章同款「左景右人」合成圖（Image Concatenate 節點）
 - [ ] D2 為一個 60 秒小故事寫分鏡表 `shots.csv`（4 段 × 15 秒），每段做首幀
 - [ ] D3 做首尾幀對（同場景兩張，姿勢不同）
-- [ ] D4 整理資料夾命名（見 local-image-guide §7），全部 PNG、16:9
+- [ ] D4 整理資料夾命名（見 amenderstudio.com/notes/local-image-guide/#a7），全部 PNG、16:9
 - [ ] D5 開 RunPod 5090 一次（照 `ai-girlfriend/IMPLEMENT.md`），把本週素材變成 60 秒影片
 - [ ] 回顧：哪些素材真的被用到、哪些白做 → 修正下個月的做法
 
