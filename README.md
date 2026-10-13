@@ -10,20 +10,85 @@ A small native macOS launcher plus setup scripts for running [ComfyUI](https://g
 
 Everything lives in one folder (`~/GitHub/ComfyUI` by default) and can be removed by deleting it. See [UNINSTALL.md](UNINSTALL.md).
 
-## Quick start
+## Why use this
 
-Requires Apple Silicon, macOS 13+, [uv](https://docs.astral.sh/uv/), git.
+- **Latest ComfyUI, no waiting.** It runs a plain `git clone` of upstream, so new models and nodes work as soon as they land; you update when you choose.
+- **MPS pitfalls already solved.** Working torch build, fp8 files avoided (Metal has no fp8 dtype), GGUF/int8 models picked, and the one flag that speeds things up (`--use-pytorch-cross-attention`, −13% to −24%) on by default. Every number is measured on real hardware.
+- **A real Mac app, not a terminal.** Double-click, get a ComfyUI window; ⌘R restarts, ⌘L shows logs, one menu item updates. Quitting (or even a crash) never leaves an orphan Python process behind.
+- **Tiny and transparent.** About 11 MB, no Electron, no hidden state. Everything is in one folder you can read, move or delete.
+- **Doesn't touch upstream.** ComfyUI's own repo stays clean (`git status` is empty), so `git pull` never conflicts.
+- **One command to rebuild.** `install.sh` + `download_models.sh` recreate the whole setup on a fresh Mac.
 
-```bash
-git clone https://github.com/ian902792/ComfyUI-Mac && cd ComfyUI-Mac
-bash scripts/install.sh              # ComfyUI + venv + torch + custom nodes
-bash scripts/download_models.sh zimage   # start small (20 GB); omit the argument for all groups (~55 GB)
-bash scripts/start.sh                # then open http://127.0.0.1:8188
+## Install, step by step
+
+### How the pieces fit
+
+```
+~/GitHub/ComfyUI-Mac/     this repo: scripts + app source. Never modifies ComfyUI's code.
+        │  install.sh clones / reuses
+        ▼
+~/GitHub/ComfyUI/         upstream ComfyUI (git clone) + .venv + .python + models/ + custom_nodes/
+        ▲
+        │  starts main.py from .venv, reads user/app_args.txt
+/Applications/ComfyUI.app built from app/ in this repo
 ```
 
-To use the app instead of `start.sh`, build it once (next section). Set `COMFYUI_DIR` to install somewhere other than `~/GitHub/ComfyUI`.
+The app and scripts only need two things inside the ComfyUI folder: `main.py` and `.venv/bin/python`. Everything this repo adds (`.venv`, `.python`, `models`, `custom_nodes`, `user`) is already in upstream's `.gitignore`, so the clone stays clean.
 
-In ComfyUI: **Templates** (left sidebar) → pick a template → edit the prompt → **Queue** (⌘↵). The first image is 2–3× slower while Metal kernels compile; judge speed by the second one.
+### 1. Prerequisites (once)
+
+```bash
+xcode-select --install                                  # compiler tools
+curl -LsSf https://astral.sh/uv/install.sh | sh         # uv: Python + venv manager
+```
+
+Only to build the app: Rust (`curl https://sh.rustup.rs -sSf | sh`) and Node.js with pnpm (`npm i -g pnpm`).
+
+### 2. Get this repo and install ComfyUI
+
+```bash
+mkdir -p ~/GitHub && cd ~/GitHub
+git clone https://github.com/ian902792/ComfyUI-Mac
+bash ComfyUI-Mac/scripts/install.sh
+```
+
+This clones ComfyUI into `~/GitHub/ComfyUI`, creates a self-contained Python 3.12 venv, installs torch (MPS) and ComfyUI's requirements, and adds ComfyUI-Manager and ComfyUI-GGUF.
+
+**Already have a ComfyUI clone?** Point at it instead; the script reuses the clone and installs into its `.venv`:
+
+```bash
+COMFYUI_DIR=/path/to/ComfyUI bash ComfyUI-Mac/scripts/install.sh
+```
+
+Export the same `COMFYUI_DIR` whenever you run the other scripts or the app (the app's default is `~/GitHub/ComfyUI`; to change it permanently, edit `comfy_dir()` in `app/src-tauri/src/server.rs` and rebuild).
+
+### 3. Download models
+
+```bash
+bash ComfyUI-Mac/scripts/download_models.sh zimage        # smallest (20 GB), good first run
+bash ComfyUI-Mac/scripts/download_models.sh flux qwen     # add more later
+```
+
+Resumable; safe to re-run. Already have models elsewhere? Skip this and use ComfyUI's `extra_model_paths.yaml` (an example ships in the ComfyUI folder).
+
+### 4. Run it
+
+Terminal (no build needed): `bash ComfyUI-Mac/scripts/start.sh`, then open http://127.0.0.1:8188.
+
+App: build once ([Build the app](#build-the-app)), then open **ComfyUI** from Applications.
+
+### 5. First image
+
+Left sidebar **Templates** → choose a template matching a model you downloaded (e.g. *Z-Image Turbo*) → **Queue** (⌘↵). The first run is slow while the model loads and Metal compiles.
+
+### Keeping it up to date
+
+| What | How |
+|---|---|
+| ComfyUI + custom nodes | App menu **Update ▸ Update ComfyUI**, or `cd ~/GitHub/ComfyUI && git pull && uv pip install --python .venv/bin/python -r requirements.txt` |
+| This repo (scripts, app) | `git pull` in `ComfyUI-Mac`, then rebuild the app if `app/` changed |
+| Models | Re-run `download_models.sh`; new files are fetched, complete ones skipped |
+| Startup flags | Edit `user/app_args.txt` (app menu **Server ▸ Edit Startup Args…**), then ⌘R |
 
 ## ComfyUI.app
 
