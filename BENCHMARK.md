@@ -1,5 +1,7 @@
 # 本機實測紀錄 — MacBook Pro M5 Pro (20 核 GPU) / 64 GB (68.7 GB 可見) / macOS 27.0
 
+> 2026-10 註：本機已改用 Qwen Image 2.1（新數據見 README），下方 Qwen-Image 1.x / Edit-2511 的紀錄為歷史資料；`scripts/bench.py` 的 `qwen` / `edit` 目標對應舊模型，需要對應檔案才能跑。
+
 ComfyUI 0.36.0 · torch 2.14.0 (MPS) · Python 3.12.13 · 解析度 1344×768 · 每個模型跑兩張，第二張為穩定速度。
 工具：`~/GitHub/ComfyUI/.venv/bin/python scripts/bench.py [zimage|flux|qwen|edit]`，結果 `bench_results.txt`，圖 `~/GitHub/ComfyUI/output/bench/`。
 

@@ -2,7 +2,7 @@
 
 ```bash
 rm -rf /Applications/ComfyUI.app   # App
-rm -rf ~/GitHub/ComfyUI                   # ComfyUI 程式、Python、venv、模型（86 GB）、輸出、設定
+rm -rf ~/GitHub/ComfyUI                   # ComfyUI 程式、Python、venv、模型（約 55–90 GB）、輸出、設定
 ```
 沒有其他殘留（未使用 Homebrew、`~/.cache/huggingface`、`~/Library`）。
 開發用的 Rust/Node 工具鏈（`~/.cargo`、`~/.rustup`、pnpm 快取）不是本專案裝的，不動。

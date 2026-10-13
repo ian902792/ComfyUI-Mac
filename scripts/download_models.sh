@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# 下載本機生圖用模型到 $COMFYUI_DIR/models（預設 ~/GitHub/ComfyUI）（可中斷續傳，重跑會跳過已完成檔）。
-#   bash scripts/download_models.sh            # 全部（約 90 GB）
+# Download models into $COMFYUI_DIR/models (default ~/GitHub/ComfyUI). 下載本機生圖用模型（可中斷續傳，重跑會跳過已完成檔）。
+#   bash scripts/download_models.sh            # zimage + flux + qwen（約 55 GB）；noct 為選用，需明確指定
 #   bash scripts/download_models.sh zimage     # 只下 Z-Image（平衡方案入門，20 GB）
-#   bash scripts/download_models.sh flux qwen edit
+#   bash scripts/download_models.sh flux qwen noct
 set -uo pipefail
 M="${COMFYUI_DIR:-$HOME/GitHub/ComfyUI}/models"; HF=https://huggingface.co
 get(){ mkdir -p "$M/$1"; f="$M/$1/${3:-$(basename "$2")}"
@@ -10,7 +10,7 @@ get(){ mkdir -p "$M/$1"; f="$M/$1/${3:-$(basename "$2")}"
   [ -n "$remote" ] && [ "$local_sz" = "$remote" ] && { echo "skip $(basename "$f") (complete)"; return; }
   echo "==> $(basename "$f") ($local_sz/$remote)"; curl -sSL --retry 8 --retry-all-errors -C - -o "$f" "$2" && echo "ok  $(basename "$f")"; }
 want(){ [ $# -eq 0 ] && return 0; for w in "$@"; do [ "$w" = "$1" ] && return 0; done; return 1; }
-sel=("$@"); has(){ [ ${#sel[@]} -eq 0 ] && return 0; for s in "${sel[@]}"; do [ "$s" = "$1" ] && return 0; done; return 1; }
+sel=("$@"); has(){ [ ${#sel[@]} -eq 0 ] && [ "$1" != noct ] && return 0; for s in "${sel[@]}"; do [ "$s" = "$1" ] && return 0; done; return 1; }
 
 if has zimage; then   # Z-Image-Turbo 6B，8 步，Apache-2.0 —— 先玩這個
   get diffusion_models $HF/Comfy-Org/z_image_turbo/resolve/main/split_files/diffusion_models/z_image_turbo_bf16.safetensors   # 12.3 GB
@@ -23,16 +23,14 @@ if has flux; then     # FLUX.1 Krea dev 12B，真人質感，非商用授權
   get text_encoders    $HF/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn_scaled.safetensors                                    #  5.2 GB
   get vae              $HF/Comfy-Org/z_image_turbo/resolve/main/split_files/vae/ae.safetensors
 fi
-if has qwen; then     # Qwen-Image 20B，構圖/文字/指令最準，Apache-2.0
-  get diffusion_models $HF/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_fp8_e4m3fn.safetensors            # 20.4 GB
-  get text_encoders    $HF/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors          #  9.4 GB
-  get vae              $HF/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/vae/qwen_image_vae.safetensors                                #  0.3 GB
-  get loras            $HF/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Lightning-8steps-V2.0.safetensors                             #  1.7 GB (8 步加速)
+if has qwen; then     # Qwen Image 2.1（7B 生成端）：文字渲染、提示詞理解、T2I 與編輯同一模型。Qwen Research License，非商用
+  Q=$HF/Comfy-Org/Qwen-Image-2.1/resolve/main
+  get diffusion_models $Q/diffusion_models/qwen_image_2.1_int8_convrot.safetensors                  #  7.3 GB（官方 template 用這個）
+  get text_encoders    $Q/text_encoders/qwen3vl_8b_int8_convrot.safetensors                         #  9.4 GB
+  get vae              $Q/vae/qwen_image_2.1_vae_bf16.safetensors                                   #  0.7 GB
+  get loras            $Q/loras/qwen_image_2.1_turbo_lora_avg_rank_178_bf16.safetensors             #  0.9 GB（8 步加速；舊 Lightning LoRA 不相容）
 fi
-if has edit; then     # Qwen-Image-Edit-2511，多圖編輯保持同一人（角色參考圖集用）
-  get diffusion_models $HF/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_edit_2511_int8_convrot.safetensors        # 20.5 GB (int8；fp8mixed 在 MPS 不能跑)
-  get loras            $HF/lightx2v/Qwen-Image-Edit-2511-Lightning/resolve/main/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors        # 0.85 GB (2511 官方 4 步加速，template 用這個)
-  get loras            $HF/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/loras/Qwen-Edit-2509-Multiple-angles.safetensors                # 0.24 GB (一鍵多角度：角色參考圖集用)
-  # text encoder / vae 與 qwen 共用
+if has noct; then     # 選用：Noct-Q 寫實 merge（Qwen Image 2.1），可取代上面的 diffusion model
+  get diffusion_models $HF/Noctaluna/Noct-Q-Uncensored-Qwen-Image-2.1/resolve/main/NoctQ_V4_int8_convrot.safetensors   # 7.3 GB
 fi
 echo; du -sh "$M"/{diffusion_models,text_encoders,vae,loras} 2>/dev/null
