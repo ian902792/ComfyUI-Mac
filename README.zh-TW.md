@@ -2,93 +2,110 @@
 
 [English](README.md) · **繁體中文**
 
-在 Apple Silicon Mac 上本機執行 [ComfyUI](https://github.com/comfyanonymous/ComfyUI) 的原生啟動器與安裝腳本。
-
-- **ComfyUI.app**：約 11 MB 的 Tauri 2（Rust + 系統 WKWebView）外殼。負責啟動伺服器、顯示 log 視窗、從選單重啟與更新 ComfyUI，關閉時一併停掉伺服器。
-- **腳本**：一行指令安裝（uv + Python 3.12 + torch/MPS + ComfyUI-Manager + ComfyUI-GGUF），模型下載可續傳。
-- **實測數據**：MacBook Pro M5 Pro / 64 GB 的速度、記憶體與 MPS 相容性（見 [BENCHMARK.md](BENCHMARK.md)）。
-
-所有東西都在同一個資料夾（預設 `~/GitHub/ComfyUI`），刪掉就乾淨。移除方式見 [UNINSTALL.md](UNINSTALL.md)。
-
-## 為什麼用這個
-
-- **永遠是最新的 ComfyUI。** 直接 `git clone` 官方 repo，新模型、新節點一出就能用，何時更新由你決定。
-- **MPS 的坑都踩完了。** torch 版本可用、避開 Metal 不支援的 fp8、挑好能跑的 GGUF / int8 模型，並預設開啟唯一有效的加速旗標（`--use-pytorch-cross-attention`，快 13%～24%）。所有數字都是實機測的。
-- **是 Mac App，不是終端機。** 雙擊就開 ComfyUI 視窗；⌘R 重啟、⌘L 看 log、選單一鍵更新。關閉（甚至 crash）也不會留下孤兒 Python 程序。
-- **小而透明。** 約 11 MB，沒有 Electron，沒有隱藏狀態。全部在一個你能看、能搬、能刪的資料夾裡。
-- **不動官方 repo。** ComfyUI 本體保持乾淨（`git status` 為空），`git pull` 永遠不會衝突。
-- **一行重建。** `install.sh` + `download_models.sh` 就能在新 Mac 上重建整套環境。
-
-## 安裝步驟
-
-### 各部分的關係
+> 打一句話，你的 Mac 就畫出一張圖。不用雲端、不用訂閱，圖片和資料都不會離開你的電腦。
 
 ```
-~/GitHub/ComfyUI-Mac/     本 repo：腳本 + App 原始碼，不會改 ComfyUI 的程式碼
-        │  install.sh 負責 clone / 沿用
-        ▼
-~/GitHub/ComfyUI/         官方 ComfyUI（git clone）+ .venv + .python + models/ + custom_nodes/
-        ▲
-        │  用 .venv 啟動 main.py，讀 user/app_args.txt
-/Applications/ComfyUI.app 由本 repo 的 app/ 編譯而來
+  「一隻坐在雪地裡的紅狐狸」           ┌──────────────────────┐
+  ───────────────────────────►         │  你的 Mac  +  一個模型 │  ───────►   🖼️  一張圖
+        （你輸入這句）                 └──────────────────────┘
 ```
 
-App 和腳本只要求 ComfyUI 資料夾裡有 `main.py` 與 `.venv/bin/python`。本 repo 新增的東西（`.venv`、`.python`、`models`、`custom_nodes`、`user`）都已在官方 `.gitignore` 內，所以 clone 會維持乾淨。
+## 這是什麼？（30 秒版）
 
-### 1. 事前準備（只做一次）
+把你的 Mac 想成一間**廚房**。
 
+| 在這個專案裡 | 可以想成 |
+|---|---|
+| **你的 Mac** | 廚房 |
+| **ComfyUI** | 有很多旋鈕和按鈕的料理檯 |
+| **模型** | 學過畫畫的大廚（一個 7～20 GB 的大檔案），不同大廚畫風不同 |
+| **提示詞（prompt）** | 你寫的點菜單：「一隻坐在雪地裡的紅狐狸」 |
+| **ComfyUI.app**（本專案） | 一扇大門：雙擊它，廚房就開燈 |
+| **腳本**（本專案） | 幫你蓋好廚房、把大廚請來的小幫手 |
+
+就這樣。本專案做的是**大門**和**小幫手**。料理檯（ComfyUI）和大廚（模型）是別人做的，我們只是讓它們在 Mac 上更好用。
+
+## 為什麼用這個？
+
+- 🆕 **永遠是最新的 ComfyUI。** 新大廚、新工具，推出當天就能用。
+- 🧯 **Mac 上的陷阱都處理好了。** 有些模型格式在 Mac 上會當掉，我們挑了能跑的，還預設開了免費加速（快 13～24%）。
+- 🖱️ **雙擊就能用。** 設定完之後不用碰終端機，關掉 App 一切乾淨停止。
+- 🪶 **很小。** App 只有約 11 MB。
+- 📦 **全部放在同一個資料夾。** 想移除，刪掉資料夾就好，不會藏在別處。
+- 🔁 **隨時重建。** 換新 Mac？跑兩行指令就回來了。
+
+## 開始設定（4 步，複製貼上就好）
+
+打開 **終端機（Terminal）**，一次貼一個框。
+
+**步驟 0：準備基本工具（只做一次）。** *（像是先買鍋碗瓢盆。）*
 ```bash
-xcode-select --install                                  # 編譯工具
-curl -LsSf https://astral.sh/uv/install.sh | sh         # uv：Python 與 venv 管理
+xcode-select --install
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-只有要自己編譯 App 才需要：Rust（`curl https://sh.rustup.rs -sSf | sh`）與 Node.js + pnpm（`npm i -g pnpm`）。
-
-### 2. 取得本 repo 並安裝 ComfyUI
-
+**步驟 1：蓋好廚房。** *（下載 ComfyUI 並設定好，要花幾分鐘。）*
 ```bash
 mkdir -p ~/GitHub && cd ~/GitHub
 git clone https://github.com/ian902792/ComfyUI-Mac
 bash ComfyUI-Mac/scripts/install.sh
 ```
 
-腳本會把 ComfyUI clone 到 `~/GitHub/ComfyUI`，建立自包含的 Python 3.12 venv，安裝 torch（MPS）與 ComfyUI 依賴，並加入 ComfyUI-Manager 與 ComfyUI-GGUF。
+**步驟 2：請第一位大廚。** *（要下載 20 GB。中途停掉也沒關係，重跑會接著下載。）*
+```bash
+bash ComfyUI-Mac/scripts/download_models.sh zimage
+```
 
-**已經有自己的 ComfyUI clone？** 用 `COMFYUI_DIR` 指過去，腳本會沿用該 clone，並安裝到它的 `.venv`：
+**步驟 3：打開廚房的燈。**
+```bash
+bash ComfyUI-Mac/scripts/start.sh
+```
+然後用瀏覽器打開 **http://127.0.0.1:8188**。
 
+**步驟 4：畫出第一張圖。**
+1. 左邊點 **Templates**，選 **Z-Image Turbo**。
+2. 改掉提示詞框裡的文字。
+3. 按 **Queue**（或 ⌘ + Return）。
+
+第一張會很慢（大廚在暖身），第二張才是正常速度，約 22 秒。
+
+### 想要雙擊就開的 App？
+
+步驟 0～3 用瀏覽器就能用了。App 是更方便的大門，但目前還沒有現成的下載，需要自己編譯一次，見[編譯 App](#編譯-app)。另外要裝 Rust 和 Node.js。
+
+### 你已經有 ComfyUI 了？
+
+告訴小幫手它在哪，它會用你的，不會另外再裝一份：
 ```bash
 COMFYUI_DIR=/path/to/ComfyUI bash ComfyUI-Mac/scripts/install.sh
 ```
+其他腳本前面也要加同樣的 `COMFYUI_DIR=…`。
 
-之後執行其他腳本或 App 時也要用同一個路徑（App 預設是 `~/GitHub/ComfyUI`；想永久改，編輯 `app/src-tauri/src/server.rs` 的 `comfy_dir()` 後重編）。
+### 各部分怎麼接在一起
 
-### 3. 下載模型
-
-```bash
-bash ComfyUI-Mac/scripts/download_models.sh zimage        # 最小一組（20 GB），適合第一次
-bash ComfyUI-Mac/scripts/download_models.sh flux qwen     # 之後再加
 ```
-
-可續傳，重跑也安全。模型已經放在別處？跳過這步，改用 ComfyUI 資料夾裡附的 `extra_model_paths.yaml.example` 設定路徑。
-
-### 4. 啟動
-
-終端機（不用編譯）：`bash ComfyUI-Mac/scripts/start.sh`，再開 http://127.0.0.1:8188。
-
-App：先編譯一次（見[編譯 App](#編譯-app)），之後從「應用程式」開 **ComfyUI**。
-
-### 5. 出第一張圖
-
-左側 **Templates** → 選一個對應你已下載模型的範本（例如 *Z-Image Turbo*）→ **Queue**（⌘↵）。第一張會慢，因為要載入模型並編譯 Metal kernel。
+ ComfyUI-Mac（本專案）                   ComfyUI（真正的主角）
+ ┌─────────────────────────┐            ┌──────────────────────────┐
+ │ 腳本：蓋廚房 + 請大廚   │ ─ 負責安裝 ─►│ main.py  .venv  models/  │
+ │ App：那扇大門           │ ─ 負責啟動 ─►│ custom_nodes/  user/     │
+ └─────────────────────────┘            └──────────────────────────┘
+        從不修改 ComfyUI 的程式碼 → ComfyUI 保持乾淨，`git pull` 不會衝突
+```
 
 ### 保持最新
 
-| 項目 | 做法 |
+| 我想要… | 做法 |
 |---|---|
-| ComfyUI 與自訂節點 | App 選單 **Update ▸ Update ComfyUI**，或 `cd ~/GitHub/ComfyUI && git pull && uv pip install --python .venv/bin/python -r requirements.txt` |
-| 本 repo（腳本、App） | 在 `ComfyUI-Mac` 裡 `git pull`；若 `app/` 有變動就重編 App |
-| 模型 | 重跑 `download_models.sh`，只會補下新的，已完整的會跳過 |
-| 啟動參數 | 編輯 `user/app_args.txt`（App 選單 **Server ▸ Edit Startup Args…**），再按 ⌘R |
+| 更新 ComfyUI | App 選單 **Update ▸ Update ComfyUI**（或在 ComfyUI 資料夾裡 `git pull`） |
+| 更新本專案 | 在 `ComfyUI-Mac` 裡 `git pull`；若 `app/` 有變動就重編 App |
+| 多請幾位大廚 | 再跑一次 `download_models.sh`，只會補下缺的 |
+| 改啟動選項 | App 選單 **Server ▸ Edit Startup Args…**，然後 ⌘R |
+
+---
+
+## 給大人看的：詳細資料
+
+以下是參考資料：App 選單、模型清單、速度、設定、相容性、疑難排解。
 
 ## ComfyUI.app
 
