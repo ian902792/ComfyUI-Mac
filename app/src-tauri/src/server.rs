@@ -28,7 +28,7 @@ pub type State = Arc<Mutex<Server>>;
 pub fn comfy_dir() -> PathBuf {
     std::env::var_os("COMFYUI_DIR")
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(std::env::var("HOME").unwrap_or_default()).join("ComfyUI"))
+        .unwrap_or_else(|| PathBuf::from(std::env::var("HOME").unwrap_or_default()).join("GitHub/ComfyUI"))
 }
 
 pub fn dir_ok(dir: &PathBuf) -> bool {

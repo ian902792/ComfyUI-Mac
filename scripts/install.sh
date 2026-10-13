@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# 從零重建 ~/ComfyUI（自包含：Python、venv、pip 快取、custom_nodes 都在裡面）。可重複執行。
+# 從零重建 ~/GitHub/ComfyUI（自包含：Python、venv、pip 快取、custom_nodes 都在裡面）。可重複執行。
 #   bash scripts/install.sh            # 只裝程式
 #   bash scripts/install.sh --models   # 順便下載全部模型（約 90 GB）
 set -euo pipefail
-D="${COMFYUI_DIR:-$HOME/ComfyUI}"
+D="${COMFYUI_DIR:-$HOME/GitHub/ComfyUI}"
 command -v uv >/dev/null || { echo "需要 uv：curl -LsSf https://astral.sh/uv/install.sh | sh"; exit 1; }
 [ -d "$D/.git" ] || git clone https://github.com/comfyanonymous/ComfyUI "$D"
 cd "$D"

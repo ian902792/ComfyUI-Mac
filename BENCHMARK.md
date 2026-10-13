@@ -1,7 +1,7 @@
 # 本機實測紀錄 — MacBook Pro M5 Pro (20 核 GPU) / 64 GB (68.7 GB 可見) / macOS 27.0
 
 ComfyUI 0.36.0 · torch 2.14.0 (MPS) · Python 3.12.13 · 解析度 1344×768 · 每個模型跑兩張，第二張為穩定速度。
-工具：`~/ComfyUI/.venv/bin/python scripts/bench.py [zimage|flux|qwen|edit]`，結果 `bench_results.txt`，圖 `~/ComfyUI/output/bench/`。
+工具：`~/GitHub/ComfyUI/.venv/bin/python scripts/bench.py [zimage|flux|qwen|edit]`，結果 `bench_results.txt`，圖 `~/GitHub/ComfyUI/output/bench/`。
 
 **目前最佳設定（2026-09-18）**：`--use-pytorch-cross-attention`（已是 App 預設）→ Z-Image **22 s**、Flux Krea **85 s**、Qwen-Image **~44 s**、Qwen-Edit **53 s**（1344×768）。
 
@@ -30,7 +30,7 @@ Qwen 8 步在 33–56 s 之間波動，取決於前一個模型是否還占著�
 | Qwen-Edit-2511 4 步 | 67.5 s | **52.8 s** | −22% |
 
 峰值記憶體不變（Qwen 系列仍 ~60 GB）。輸出是同一組 seed，畫面肉眼無差（SDPA 是數學等價的注意力實作，只是 kernel 不同）。
-**已設為預設**（`~/ComfyUI/user/app_args.txt`）。
+**已設為預設**（`~/GitHub/ComfyUI/user/app_args.txt`）。
 
 同時觀察到 `sysctl vm.swapusage` 顯示 **28.8 GB swap 在用**（`vm_stat` Swapouts 3.6 千萬頁）——跑 Qwen 系列時系統會把其他 app 換出去；不是錯誤，但代表 64 GB 對 20B 模型 + 日常 app 是剛剛好。跑 Qwen 前關掉大 app 這條建議是實測有差的。
 

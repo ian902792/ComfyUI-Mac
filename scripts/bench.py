@@ -1,4 +1,4 @@
-# 本機測速（需 ComfyUI 已在 8188 跑著）：~/ComfyUI/.venv/bin/python scripts/bench.py [zimage|flux|qwen|edit ...]   每個模型跑兩張，第二張才是穩定速度；同時回報 ComfyUI 程序的峰值 RSS（統一記憶體占用）。
+# 本機測速（需 ComfyUI 已在 8188 跑著）：~/GitHub/ComfyUI/.venv/bin/python scripts/bench.py [zimage|flux|qwen|edit ...]   每個模型跑兩張，第二張才是穩定速度；同時回報 ComfyUI 程序的峰值 RSS（統一記憶體占用）。
 import json, time, urllib.request, sys
 API="http://127.0.0.1:8188"; W,H=1344,768
 P="Photorealistic portrait of an adult woman in her late 20s, deep brown short hair, light freckles across the nose, a small mole at the tail of the left eyebrow, slightly asymmetric smile, natural window light, 35mm, sitting on a black leather sofa in a dark room, realistic skin texture"

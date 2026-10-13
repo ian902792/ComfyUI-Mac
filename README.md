@@ -10,13 +10,13 @@ ComfyUI-Mac/                  ← 這個 repo 資料夾：我們自己的東西�
 ├── UNINSTALL.md
 ├── （本機生圖教學已搬到 amenderstudio.com/notes/local-image-guide）
 ├── scripts/
-│   ├── install.sh            從零重建 ~/ComfyUI（clone + venv + torch + custom_nodes）
+│   ├── install.sh            從零重建 ~/GitHub/ComfyUI（clone + venv + torch + custom_nodes）
 │   ├── download_models.sh    下載模型（可續傳、可單組）
 │   ├── start.sh              終端機啟動（平常用 App）
 │   └── bench.py              測速（速度 + 記憶體）
 └── app/                      ComfyUI.app 原始碼（Tauri 2 / Rust）
 
-~/ComfyUI/                    ← 官方 ComfyUI 的乾淨 clone（git status 為空，可 git pull）
+~/GitHub/ComfyUI/                    ← 官方 ComfyUI 的乾淨 clone（git status 為空，可 git pull）
 ├── .python/ .venv/           自包含 Python 3.12 + torch(MPS)          （官方 .gitignore 已忽略）
 ├── custom_nodes/             ComfyUI-Manager、ComfyUI-GGUF            （同上）
 ├── models/                   86 GB                                     （同上）
@@ -34,13 +34,13 @@ ComfyUI-Mac/                  ← 這個 repo 資料夾：我們自己的東西�
 | 選單 | 做什麼 |
 |---|---|
 | Server ▸ Restart Server (⌘R) | 改了 custom_nodes / 模型 / 參數後重啟 |
-| Server ▸ Show Log Window (⌘L) | 看 python 輸出（同 `~/ComfyUI/user/app.log`） |
+| Server ▸ Show Log Window (⌘L) | 看 python 輸出（同 `~/GitHub/ComfyUI/user/app.log`） |
 | Server ▸ Edit Startup Args… | 打開 `user/app_args.txt`（一行一個旗標，如 `--fp16-vae`），存檔後 ⌘R |
 | Server ▸ Copy URL | 複製 http://127.0.0.1:8188 |
 | Update ▸ Update ComfyUI (git pull)… | 停伺服器 → `git pull` ComfyUI 與 custom_nodes → `uv pip install -r requirements.txt` → 重啟；過程在 log 視窗 |
 
 若啟動時 8188 已經有 ComfyUI 在跑（例如你用 `scripts/start.sh` 開的），App 會直接接上，標題顯示 **(external server)**，離開時不會關它；Restart / Update 在這個模式下停用。
-環境變數 `COMFYUI_DIR` 可改安裝路徑（預設 `~/ComfyUI`）。
+環境變數 `COMFYUI_DIR` 可改安裝路徑（預設 `~/GitHub/ComfyUI`）。
 
 重新編譯（改了 `app/` 之後）：
 ```bash
@@ -53,15 +53,15 @@ cd .. && pnpm dlx @tauri-apps/cli@2 bundle && rm -rf /Applications/ComfyUI.app &
 
 | 項目 | 內容 |
 |---|---|
-| ComfyUI | v0.36.0，`git clone` 官方 repo；用 App 的 Update 選單或 `git -C ~/ComfyUI pull` 更新 |
-| 自訂節點 | `~/ComfyUI/custom_nodes/ComfyUI-Manager`（在 UI 內找/裝缺的節點與模型）<br>`custom_nodes/ComfyUI-GGUF`（載入 .gguf 模型，Flux Krea 用） |
+| ComfyUI | v0.36.0，`git clone` 官方 repo；用 App 的 Update 選單或 `git -C ~/GitHub/ComfyUI pull` 更新 |
+| 自訂節點 | `~/GitHub/ComfyUI/custom_nodes/ComfyUI-Manager`（在 UI 內找/裝缺的節點與模型）<br>`custom_nodes/ComfyUI-GGUF`（載入 .gguf 模型，Flux Krea 用） |
 | Python | 3.12.13，uv 管理，裝在 **`.python/`**（不是系統 Python 3.14） |
 | 虛擬環境 | **`.venv/`**；torch 2.14（MPS 可用）、ComfyUI requirements |
 | pip 快取 | `.uv-cache/`（已清；安裝/更新時 uv 會再建，可隨時刪） |
 | 模型 | **`models/`**（見 §2） |
 | 輸出 / 輸入 | `output/` / `input/` |
 
-執行環境全部在 `~/ComfyUI`（沒有 Homebrew 套件、`~/.cache/huggingface`、`~/Library` 殘留）；移除見 `UNINSTALL.md`。
+執行環境全部在 `~/GitHub/ComfyUI`（沒有 Homebrew 套件、`~/.cache/huggingface`、`~/Library` 殘留）；移除見 `UNINSTALL.md`。
 從零重建：`bash scripts/install.sh --models`。
 
 ## 2. 模型（`models/`，共約 90 GB）
@@ -83,12 +83,12 @@ cd .. && pnpm dlx @tauri-apps/cli@2 bundle && rm -rf /Applications/ComfyUI.app &
 3. 結果在 Save Image 節點與 `output/`。
 4. 第一張會慢 2–3 倍（編譯 Metal kernel），看第二張的時間才準。
 
-實用旗標（寫進 `~/ComfyUI/user/app_args.txt`，或接在 `start.sh` 後）：
+實用旗標（寫進 `~/GitHub/ComfyUI/user/app_args.txt`，或接在 `start.sh` 後）：
 - `--fp16-vae`：出黑圖/灰圖時用
 - `--preview-method auto`：生成中即時預覽
 - `--output-directory ~/AIVideo/out`：輸出改到別處
 
-更新：App 選單 Update ▸ Update ComfyUI，或 `cd ~/ComfyUI && git pull && uv pip install --python .venv/bin/python -r requirements.txt`
+更新：App 選單 Update ▸ Update ComfyUI，或 `cd ~/GitHub/ComfyUI && git pull && uv pip install --python .venv/bin/python -r requirements.txt`
 
 ## 3.5 設定優化（不降品質）
 
@@ -164,16 +164,16 @@ cd .. && pnpm dlx @tauri-apps/cli@2 bundle && rm -rf /Applications/ComfyUI.app &
 | Qwen-Image + Lightning | 8 | **33–56 s** | 61 GB ⚠ |
 | Qwen-Image-Edit-2511 + Lightning | 4 | **53 s** | 61 GB ⚠ |
 
-⚠ 跑 Qwen 系列前關掉其他吃記憶體的 app。重測：`~/ComfyUI/.venv/bin/python scripts/bench.py`。
+⚠ 跑 Qwen 系列前關掉其他吃記憶體的 app。重測：`~/GitHub/ComfyUI/.venv/bin/python scripts/bench.py`。
 
 ## 6. 跟官方 ComfyUI Desktop 的差別
 
-| | 這套（~/ComfyUI + 自製 Tauri App） | 官方 ComfyUI Desktop（comfy.org） |
+| | 這套（~/GitHub/ComfyUI + 自製 Tauri App） | 官方 ComfyUI Desktop（comfy.org） |
 |---|---|---|
 | 核心 | 官方 ComfyUI git clone，`git pull` 就是最新 nightly | 同一套 ComfyUI，跟隨 Desktop **穩定版**，落後 nightly 幾天到幾週 |
 | 殼 | Tauri（Rust + 系統 WKWebView），App 11 MB | Electron（內建 Chromium），App 約 200–300 MB，多吃 200–400 MB RAM |
-| Python / 依賴 | uv venv，全在 `~/ComfyUI/` | 也是 uv，但分在 `~/Library/Application Support/ComfyUI/` 與你選的 base path |
-| 模型位置 | `~/ComfyUI/models/` | base path；可用 `extra_model_paths.yaml` 指到現有目錄 |
+| Python / 依賴 | uv venv，全在 `~/GitHub/ComfyUI/` | 也是 uv，但分在 `~/Library/Application Support/ComfyUI/` 與你選的 base path |
+| 模型位置 | `~/GitHub/ComfyUI/models/` | base path；可用 `extra_model_paths.yaml` 指到現有目錄 |
 | 更新 | 選單 Update ▸ git pull，自己決定時機 | 自動更新提示、一鍵升級 |
 | 內建功能 | 啟動畫面、log 視窗、重啟、啟動參數、瀏覽器可開 | 以上皆有，另加設定 UI、內建終端機、崩潰回報、安裝精靈 |
 | 簽章 | ad-hoc（只在這台正常） | Apple 公證，換機器不會被 Gatekeeper 擋 |
@@ -183,7 +183,7 @@ cd .. && pnpm dlx @tauri-apps/cli@2 bundle && rm -rf /Applications/ComfyUI.app &
 
 **結論**：以「本機做生圖素材 → 雲端做影片、想學東西、要控制檔案位置」這個目標，現在這套較適合——環境已調通（MPS 地雷踩完）、nightly 先支援新模型、可整個移除、殼更省記憶體。
 Desktop 較適合：完全不想碰指令、要自動更新與設定介面、或要裝到別台 Mac。
-兩者可**並存**（Desktop 預設 port 8000，不衝突），把它的 model path 指到 `~/ComfyUI/models` 即可共用模型；不必二選一。
+兩者可**並存**（Desktop 預設 port 8000，不衝突），把它的 model path 指到 `~/GitHub/ComfyUI/models` 即可共用模型；不必二選一。
 
 ## 7. 常見問題
 

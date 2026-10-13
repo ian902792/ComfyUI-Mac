@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# 下載本機生圖用模型到 $COMFYUI_DIR/models（預設 ~/ComfyUI）（可中斷續傳，重跑會跳過已完成檔）。
+# 下載本機生圖用模型到 $COMFYUI_DIR/models（預設 ~/GitHub/ComfyUI）（可中斷續傳，重跑會跳過已完成檔）。
 #   bash scripts/download_models.sh            # 全部（約 90 GB）
 #   bash scripts/download_models.sh zimage     # 只下 Z-Image（平衡方案入門，20 GB）
 #   bash scripts/download_models.sh flux qwen edit
 set -uo pipefail
-M="${COMFYUI_DIR:-$HOME/ComfyUI}/models"; HF=https://huggingface.co
+M="${COMFYUI_DIR:-$HOME/GitHub/ComfyUI}/models"; HF=https://huggingface.co
 get(){ mkdir -p "$M/$1"; f="$M/$1/${3:-$(basename "$2")}"
   remote=$(curl -sIL "$2" | grep -i '^content-length' | tail -1 | tr -dc 0-9); local_sz=$(stat -f%z "$f" 2>/dev/null || echo 0)
   [ -n "$remote" ] && [ "$local_sz" = "$remote" ] && { echo "skip $(basename "$f") (complete)"; return; }
